@@ -2,3 +2,7 @@
 .DS_Store
 *.swp
 *.swo
+
+
+# we need to be explicit about this one since it has sensitive information 
+wpa_supplicant.conf
