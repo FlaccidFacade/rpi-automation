@@ -4,5 +4,8 @@
 *.swo
 
 
-# we need to be explicit about this one since it has sensitive information 
+# we need to be explicit about wpa_supplicant since it has sensitive information 
 wpa_supplicant.conf
+
+# we need to be explicit about userconf since it has sensitive information 
+boot/userconf.txt
