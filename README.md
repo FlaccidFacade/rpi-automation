@@ -18,12 +18,12 @@ nano boot/userconf.txt          # username + password hash
 nano boot/config.txt            # hardware params
 
 # 2. Mount the boot partition and copy files
-sudo losetup --find --partscan --show raspios.img   # e.g. /dev/loop0
+LOOPDEV=$(sudo losetup --find --partscan --show raspios.img)   # e.g. /dev/loop0
 sudo mkdir -p /mnt/pi-boot
-sudo mount /dev/loop0p1 /mnt/pi-boot
+sudo mount "${LOOPDEV}p1" /mnt/pi-boot
 sudo ./setup.sh /mnt/pi-boot
 sudo umount /mnt/pi-boot
-sudo losetup -d /dev/loop0
+sudo losetup -d "${LOOPDEV}"
 
 # 3. Flash to SD card
 sudo ./flash.sh raspios.img /dev/sdb
