@@ -1,141 +1,90 @@
-# pi-automation
+# rpi-automation
 
-Tools for customizing Raspberry Pi OS images and flashing SD cards, targeting first-boot setup of Raspberry Pi devices (4B, Zero, Pico, and more).
+Simple shell scripts for customizing a Raspberry Pi OS image and flashing SD cards. Currently targets RPi 4B 8GB — will expand for Zero, Pico, etc.
 
-## Features
+## What it does
 
-- **Customize a Raspberry Pi OS image** for first boot — no interactive setup needed
-  - Enable/disable SSH
-  - Configure WiFi
-  - Set hostname, locale, timezone, and keyboard layout
-  - Configure the initial user account
-  - Tune `config.txt` hardware parameters (64-bit mode, GPU memory, UART, overclocking, etc.)
-- **Flash the image to an SD card** with safety checks (guards against accidentally targeting system disks)
-- **YAML-based configuration** — one file per device type, easy to version-control
+`setup.sh` reads a config file and writes first-boot files to a mounted boot partition:
 
-## Requirements
+| File | Purpose |
+|---|---|
+| `ssh` | Enables SSH on first boot |
+| `wpa_supplicant.conf` | WiFi credentials (if enabled) |
+| `config.txt` | Hardware params (`arm_64bit`, `gpu_mem`, `enable_uart`, extras) |
+| `userconf.txt` | Initial user + hashed password |
+| `firstrun.sh` + `cmdline.txt` | Sets hostname, locale, timezone on first boot |
 
-- Python 3.9+
-- Linux host (uses `losetup`, `mount`, and `dd`)
-- `pyyaml` (`pip install -r requirements.txt`)
-- Root privileges for image mounting and SD card flashing
+`flash.sh` flashes an `.img` to an SD card via `dd` with a safety check.
 
-## Quickstart
+## Usage
 
-### 1. Install dependencies
+### 1. Edit the config
 
 ```bash
-pip install -r requirements.txt
+cp config/rpi4b_8gb.conf config/my_pi.conf
+nano config/my_pi.conf
 ```
 
-### 2. Create your configuration
-
-Copy and edit the bundled configuration for RPi 4B 8GB:
+Key settings:
 
 ```bash
-cp config/rpi4b_8gb.yaml config/my_pi.yaml
+HOSTNAME="my-pi"
+SSH_ENABLED=true
+WIFI_ENABLED=true
+WIFI_SSID="MyNetwork"
+WIFI_PASSWORD="s3cret"
+USER_NAME="pi"
+USER_PASSWORD_HASH="$6$..."   # openssl passwd -6 yourpassword
+TIMEZONE="America/New_York"
 ```
 
-Key settings to customise:
-
-```yaml
-customization:
-  hostname: my-pi
-
-  ssh:
-    enabled: true          # enable SSH on first boot
-
-  wifi:
-    enabled: true          # enable WiFi
-    ssid: "MyNetwork"
-    password: "s3cret"
-    country: US
-
-  user:
-    name: pi
-    # generate with: openssl passwd -6 yourpassword
-    password_hash: "$6$..."
-
-  locale:
-    timezone: America/New_York
-    keyboard_layout: us
-    language: en_US.UTF-8
-```
-
-See `config/template.yaml` for all available options with documentation.
-
-### 3. Customize the image
-
-**Option A — let the tool mount the image** (requires root):
+### 2. Mount the image and run setup
 
 ```bash
-sudo python3 customize_image.py raspios.img --config config/my_pi.yaml
+# Mount the boot partition (partition 1 of the image)
+sudo losetup --find --partscan --show raspios.img   # e.g. /dev/loop0
+sudo mkdir -p /mnt/pi-boot
+sudo mount /dev/loop0p1 /mnt/pi-boot
+
+# Run setup
+sudo ./setup.sh config/my_pi.conf /mnt/pi-boot
+
+# Unmount
+sudo umount /mnt/pi-boot
+sudo losetup -d /dev/loop0
 ```
 
-**Option B — point the tool at an already-mounted image** (no root for this step):
+Or if the SD card is already inserted and mounted:
 
 ```bash
-# mount manually first, then:
-python3 customize_image.py raspios.img \
-    --no-mount --boot /mnt/boot --config config/my_pi.yaml
+sudo ./setup.sh config/my_pi.conf /media/you/bootfs
 ```
 
-### 4. List available SD card devices
+### 3. Flash to SD card
 
 ```bash
-python3 flash_sd.py raspios.img
+# List devices
+sudo ./flash.sh raspios.img
+
+# Flash (will prompt for confirmation)
+sudo ./flash.sh raspios.img /dev/sdb
 ```
 
-### 5. Flash to SD card (requires root)
-
-```bash
-sudo python3 flash_sd.py raspios.img --device /dev/sdb
-```
-
-The tool will display a confirmation prompt before writing. Use `--yes` to skip it in scripts.
-
-## Project structure
-
-```
-pi-automation/
-├── customize_image.py      # CLI: customize a Raspberry Pi OS image
-├── flash_sd.py             # CLI: flash an image to an SD card
-├── pi_automation/
-│   ├── config.py           # configuration dataclasses + YAML loading
-│   ├── customize.py        # image customization logic (ImageCustomizer, ImageMounter)
-│   └── flash.py            # SD card flashing logic (validate, flash)
-├── config/
-│   ├── rpi4b_8gb.yaml      # ready-to-use config for Raspberry Pi 4B 8GB
-│   └── template.yaml       # fully-documented template for any Pi variant
-├── tests/
-│   ├── test_config.py
-│   ├── test_customize.py
-│   └── test_flash.py
-├── requirements.txt
-└── requirements-dev.txt
-```
-
-## Running the tests
-
-```bash
-pip install -r requirements-dev.txt
-python -m pytest tests/ -v
-```
-
-## Generating a password hash
+## Generate a password hash
 
 ```bash
 openssl passwd -6 yourpassword
 ```
 
-Paste the output into `password_hash` in your YAML config.
+Paste the output into `USER_PASSWORD_HASH` in your config file.
 
-## Supported devices
+## Files
 
-| Device | `device` value | Recommended `arch` |
-|---|---|---|
-| Raspberry Pi 4B | `rpi4b` | `arm64` |
-| Raspberry Pi 3 | `rpi3` | `arm64` |
-| Raspberry Pi Zero 2W | `rpizero2w` | `arm64` |
-| Raspberry Pi Zero | `rpizero` | `armhf` |
-| Raspberry Pi Pico | `rpipico` | n/a |
+```
+rpi-automation/
+├── setup.sh                # write first-boot files to boot partition
+├── flash.sh                # flash image to SD card
+└── config/
+    └── rpi4b_8gb.conf      # default config for RPi 4B 8GB
+```
+
