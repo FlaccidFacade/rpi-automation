@@ -1,0 +1,91 @@
+# Raspberry Pi Automation - Configuration Template
+# Copy this file, rename it, and modify it for your specific setup.
+# All values shown below are the built-in defaults.
+#
+# Supported devices : rpi4b, rpi3, rpizero, rpizero2w
+# Supported OS      : raspios
+
+device: rpi4b
+model: "Raspberry Pi 4B 8GB"
+
+image:
+  # Operating system (currently only raspios is supported)
+  os: raspios
+
+  # Image variant:
+  #   lite    - minimal server image, no desktop (recommended for headless)
+  #   desktop - includes the desktop environment
+  #   full    - desktop + recommended software
+  variant: lite
+
+  # CPU architecture:
+  #   arm64 - 64-bit (RPi 4B, RPi 3, Zero 2W — recommended where available)
+  #   armhf - 32-bit (RPi Zero, older or resource-constrained devices)
+  arch: arm64
+
+  # OS version: "latest" or a date-based release string (e.g. "2024-11-19")
+  version: latest
+
+  # Optional direct download URL for the image. Overrides os/variant/arch/version.
+  url: ""
+
+customization:
+  # Hostname for the device (must be a valid RFC 1123 hostname)
+  hostname: raspberrypi
+
+  ssh:
+    # Enable SSH on first boot. Strongly recommended for headless setups.
+    enabled: true
+
+  wifi:
+    # Enable WiFi network connection.
+    # Required for headless setups without an ethernet connection.
+    enabled: false
+    ssid: ""
+    password: ""
+    # Two-letter ISO 3166-1 country code for the WiFi regulatory domain.
+    # Examples: US, GB, DE, AU, CA
+    country: US
+
+  user:
+    # Username for the primary user account.
+    name: pi
+    # SHA-512 hashed password for the primary user.
+    # Generate with: openssl passwd -6 yourpassword
+    # Leave empty to be prompted to set a password on first login.
+    password_hash: ""
+
+  locale:
+    # IANA timezone identifier.
+    # Examples: UTC, America/New_York, Europe/London, Asia/Tokyo
+    timezone: UTC
+
+    # Keyboard layout code.
+    # Examples: us, gb, de, fr, es
+    keyboard_layout: us
+
+    # Locale string used for language and character encoding.
+    # Examples: en_US.UTF-8, en_GB.UTF-8, de_DE.UTF-8
+    language: en_US.UTF-8
+
+  boot:
+    # Enable 64-bit kernel. Set to true for arm64 images (default for RPi 4B).
+    # Must be false when using an armhf (32-bit) image.
+    arm_64bit: true
+
+    # GPU memory allocation in MB.
+    # Minimum: 16 MB. Recommended: 76 MB for headless / server use.
+    # Increase for desktop or GPU-intensive workloads.
+    gpu_mem: 76
+
+    # Enable the hardware UART for a serial console.
+    # Note: Enabling UART disables Bluetooth on RPi 4B.
+    enable_uart: false
+
+    # Additional key=value parameters appended to /boot/firmware/config.txt.
+    # These are merged with and take precedence over the keys above.
+    extra_params: {}
+    # Examples:
+    #   over_voltage: 2      # Mild overvoltage for stability when overclocking
+    #   arm_freq: 1800       # CPU frequency in MHz (mild overclock for RPi 4B)
+    #   dtoverlay: disable-bt # Disable Bluetooth module (alternative to enable_uart)
