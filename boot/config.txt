@@ -1,0 +1,5 @@
+# For more options and information see
+# http://rptl.io/configtxt
+
+arm_64bit=1
+gpu_mem=76
