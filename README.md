@@ -1,90 +1,60 @@
 # rpi-automation
 
-Simple shell scripts for customizing a Raspberry Pi OS image and flashing SD cards. Currently targets RPi 4B 8GB — will expand for Zero, Pico, etc.
+Two scripts to set up a Raspberry Pi for headless first-boot and flash the SD card.
 
-## What it does
+## How it works
 
-`setup.sh` reads a config file and writes first-boot files to a mounted boot partition:
+1. Edit the files in `boot/` — these are the actual files that go onto the boot partition
+2. `setup.sh` copies them to a mounted boot partition and wires up the firstrun trigger
+3. `flash.sh` writes the image to an SD card
 
-| File | Purpose |
-|---|---|
-| `ssh` | Enables SSH on first boot |
-| `wpa_supplicant.conf` | WiFi credentials (if enabled) |
-| `config.txt` | Hardware params (`arm_64bit`, `gpu_mem`, `enable_uart`, extras) |
-| `userconf.txt` | Initial user + hashed password |
-| `firstrun.sh` + `cmdline.txt` | Sets hostname, locale, timezone on first boot |
-
-`flash.sh` flashes an `.img` to an SD card via `dd` with a safety check.
-
-## Usage
-
-### 1. Edit the config
+## Quick start
 
 ```bash
-cp config/rpi4b_8gb.conf config/my_pi.conf
-nano config/my_pi.conf
-```
+# 1. Edit boot files to match your setup
+nano boot/wpa_supplicant.conf   # WiFi SSID + password
+nano boot/firstrun.sh           # hostname, locale, timezone
+nano boot/userconf.txt          # username + password hash
+nano boot/config.txt            # hardware params
 
-Key settings:
-
-```bash
-HOSTNAME="my-pi"
-SSH_ENABLED=true
-WIFI_ENABLED=true
-WIFI_SSID="MyNetwork"
-WIFI_PASSWORD="s3cret"
-USER_NAME="pi"
-USER_PASSWORD_HASH="$6$..."   # openssl passwd -6 yourpassword
-TIMEZONE="America/New_York"
-```
-
-### 2. Mount the image and run setup
-
-```bash
-# Mount the boot partition (partition 1 of the image)
+# 2. Mount the boot partition and copy files
 sudo losetup --find --partscan --show raspios.img   # e.g. /dev/loop0
 sudo mkdir -p /mnt/pi-boot
 sudo mount /dev/loop0p1 /mnt/pi-boot
-
-# Run setup
-sudo ./setup.sh config/my_pi.conf /mnt/pi-boot
-
-# Unmount
+sudo ./setup.sh /mnt/pi-boot
 sudo umount /mnt/pi-boot
 sudo losetup -d /dev/loop0
-```
 
-Or if the SD card is already inserted and mounted:
-
-```bash
-sudo ./setup.sh config/my_pi.conf /media/you/bootfs
-```
-
-### 3. Flash to SD card
-
-```bash
-# List devices
-sudo ./flash.sh raspios.img
-
-# Flash (will prompt for confirmation)
+# 3. Flash to SD card
 sudo ./flash.sh raspios.img /dev/sdb
 ```
 
-## Generate a password hash
+Or if the SD card is already mounted:
 
 ```bash
-openssl passwd -6 yourpassword
+sudo ./setup.sh /media/you/bootfs
 ```
 
-Paste the output into `USER_PASSWORD_HASH` in your config file.
+## Boot files
+
+| File | What to edit |
+|---|---|
+| `boot/ssh` | Empty file — just enables SSH. Delete it to disable. |
+| `boot/wpa_supplicant.conf` | Set your WiFi SSID and password |
+| `boot/config.txt` | Set `gpu_mem`, `arm_64bit`, etc. |
+| `boot/userconf.txt` | Set username + password hash (`openssl passwd -6 yourpassword`) |
+| `boot/firstrun.sh` | Set hostname, locale, timezone at the top of the script |
 
 ## Files
 
 ```
 rpi-automation/
-├── setup.sh                # write first-boot files to boot partition
-├── flash.sh                # flash image to SD card
-└── config/
-    └── rpi4b_8gb.conf      # default config for RPi 4B 8GB
+├── setup.sh          # copies boot/ files to mounted partition
+├── flash.sh          # flashes image to SD card
+└── boot/             # edit these directly
+    ├── ssh
+    ├── wpa_supplicant.conf
+    ├── config.txt
+    ├── userconf.txt
+    └── firstrun.sh
 ```
-
