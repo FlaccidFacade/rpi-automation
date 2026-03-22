@@ -24,12 +24,16 @@ if [ ! -d "$DEST" ]; then
     exit 1
 fi
 
-cp -v "$BOOT_DIR/ssh"                 "$DEST/"
-cp -v "$BOOT_DIR/wpa_supplicant.conf" "$DEST/"
-cp -v "$BOOT_DIR/config.txt"          "$DEST/"
-cp -v "$BOOT_DIR/userconf.txt"        "$DEST/"
-cp -v "$BOOT_DIR/firstrun.sh"         "$DEST/"
-chmod +x "$DEST/firstrun.sh"
+for FILE in ssh wpa_supplicant.conf config.txt userconf.txt firstrun.sh; do
+    if [ -f "$BOOT_DIR/$FILE" ]; then
+        cp -v "$BOOT_DIR/$FILE" "$DEST/"
+    else
+        echo "Skipping $FILE (not found in boot/)"
+    fi
+done
+if [ -f "$DEST/firstrun.sh" ]; then
+    chmod +x "$DEST/firstrun.sh"
+fi
 
 # Append firstrun trigger to cmdline.txt if not already present
 CMDLINE="$DEST/cmdline.txt"
