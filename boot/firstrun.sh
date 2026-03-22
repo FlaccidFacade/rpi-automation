@@ -38,7 +38,7 @@ dpkg-reconfigure -f noninteractive tzdata
 # --- Clean up ---
 CMDLINE=/boot/firmware/cmdline.txt
 if [ -f "$CMDLINE" ]; then
-    sed -i "s| systemd.run=.*||g" "$CMDLINE"
+    sed -i 's|[[:space:]]\+systemd.run=[^[:space:]]\+||g' "$CMDLINE"
 fi
 rm -f /boot/firmware/firstrun.sh
 exit 0
