@@ -1,0 +1,3 @@
+# username:password_hash
+# Generate the hash with: openssl passwd -6 yourpassword
+rpi:

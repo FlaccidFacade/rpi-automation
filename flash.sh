@@ -7,13 +7,14 @@
 #
 # Example:
 #   sudo ./flash.sh 2024-11-19-raspios-bookworm-arm64-lite.img /dev/sdb
+#   sudo ./flash.sh 2024-11-19-raspios-bookworm-arm64-lite.img.xz /dev/sdb
 #
 set -euo pipefail
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <image_file> [device]"
     echo ""
-    echo "  image_file  Path to the .img file"
+    echo "  image_file  Path to a .img or .img.xz file"
     echo "  device      Target block device (e.g. /dev/sdb)"
     echo ""
     echo "Omit device to list available devices."
@@ -65,6 +66,14 @@ if [ "$CONFIRM" != "yes" ]; then
 fi
 
 echo "Flashing ${IMAGE} to ${DEVICE} ..."
-dd if="$IMAGE" of="$DEVICE" bs=4M status=progress conv=fsync
+if [[ "$IMAGE" == *.xz ]]; then
+    if ! command -v xz >/dev/null 2>&1; then
+        echo "Error: xz is required to flash .xz images but was not found in PATH"
+        exit 1
+    fi
+    xz -dc -- "$IMAGE" | dd of="$DEVICE" bs=4M status=progress conv=fsync
+else
+    dd if="$IMAGE" of="$DEVICE" bs=4M status=progress conv=fsync
+fi
 sync
 echo "Done! You can now remove the SD card."
